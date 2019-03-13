@@ -7,7 +7,7 @@ sanctions
 This module allows for local queries against the Specially Designated Nationals and Blocked 
 Persons list (SDN), which can normally be queried via the web at:
 
-    <https://sanctionssearch.ofac.treas.gov>
+    (https://sanctionssearch.ofac.treas.gov)[https://sanctionssearch.ofac.treas.gov]
 
 Fortunately, OFAC makes the data available for download in XML format such that queries
 can become programmable
