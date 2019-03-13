@@ -1,0 +1,31 @@
+{
+  "name": "ofac",
+  "version": "1.0.0",
+  "description": "A module to facilitate OFAC searches",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha t/**/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ekkis/ofac.git"
+  },
+  "keywords": [
+    "ofac",
+    "kyc"
+  ],
+  "author": "ekkis <e@arix.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ekkis/ofac/issues"
+  },
+  "homepage": "https://github.com/ekkis/ofac#readme",
+  "dependencies": {
+    "node-fetch": "^2.3.0",
+    "unzip": "^0.1.11",
+    "xml2js": "^0.4.19"
+  },
+  "devDependencies": {
+    "mocha": "^6.0.2"
+  }
+}
