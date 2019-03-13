@@ -5,9 +5,7 @@ information related to KYC programs, particularly lists of individuals and other
 sanctions
 
 This module allows for local queries against the Specially Designated Nationals and Blocked 
-Persons list (SDN), which can normally be queried via the web at:
-
-    https://sanctionssearch.ofac.treas.gov
+Persons list (SDN), which can normally be queried via the web at: https://sanctionssearch.ofac.treas.gov
 
 Fortunately, OFAC makes the data available for download in XML format such that queries
 can become programmable
@@ -106,3 +104,42 @@ npm test
 ```
 The tests are run in Mocha with plain-vanilla asserts.  Deeper testing would be recommended but
 will leave to others
+
+## Example
+For more extensive examples please see the test suite
+```
+const ofac = require('ofac');
+ofac.init()
+    .then(() => {
+        var cust = {id: 'J287011', country: 'Colombia'};
+        return ofac.search(cust);
+    })
+    .then(console.log);
+```
+will produce something like:
+```
+[{
+    uid: '4106',
+    firstName: 'helmer',
+    lastName: 'herrera buitrago',
+    sdnType: 'individual',
+    programList: { program: 'SDNT' },
+    idList: [
+        { uid: '1011', idType: 'passport', idNumber: 'j287011', idCountry: 'colombia', firstName: '', lastName: '' },
+        { uid: '1010', idType: 'cedula no.', idNumber: '16247821', idCountry: 'colombia', firstName: '', lastName: '' } 
+    ],  
+    akaList: [
+        { uid: '7776', type: 'a.k.a.', category: 'weak', lastName: 'pacho', firstName: '' },
+        { uid: '7777', type: 'a.k.a.', category: 'weak', lastName: 'h7', firstName: '' } 
+    ],  
+    addressList: {
+        address: { uid: '2006', city: 'Cali', country: 'Colombia' }
+    },  
+    dateOfBirthList: {
+        dateOfBirthItem: [
+            { uid: '1031', dateOfBirth: '24 Aug 1951', mainEntry: 'true' },
+            { uid: '1032', dateOfBirth: '05 Jul 1951', mainEntry: 'false' }
+        ]   
+    }   
+}]
+```
