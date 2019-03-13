@@ -52,8 +52,19 @@ var self = module.exports = {
         var lineReader = readline.createInterface({
             input: fs.createReadStream(fn)
         });
+
         var xml = '', ret = [], collect = false;
-        lineReader.on('line', line => {
+        
+        return new Promise((resolve, reject) => {
+            lineReader.on('line', line => {
+                try { collector(line) }
+                catch(e) { reject(e) }
+            })
+            .on('error', reject)
+            .on('close', () => resolve(ret));
+        });
+
+        function collector(line) {
             if (line.match(/<sdnEntry>/)) collect = true;
             if (collect) xml += line;
             if (!line.match(/<\/sdnEntry>/)) return;
@@ -73,17 +84,7 @@ var self = module.exports = {
                 if (cmp(cust, res)) ret.push(res);
             });
             xml = '';
-        });
-
-        return new Promise((resolve, reject) => {
-            lineReader.on('error', (err) => {
-                console.log('--' + err + '--')
-                reject(err);
-            });
-            // lineReader.on('error', reject);
-            lineReader.on('close', () => resolve(ret));
-        });
-
+        }
         function lc(o) {
             for (var k in o) if (o.hasOwnProperty(k) && typeof o[k] == 'string')
                 o[k] = o[k].toLowerCase();

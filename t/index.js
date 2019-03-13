@@ -47,20 +47,12 @@ describe('Main', () => {
 		var actual = await ofac.search(cust, fn);
 		assert.deepEqual(actual, expected, 'Name search differs');
 	});
-/*
-	it('throws error', () => {
-		function throws() { 
-			throw new Error('TEST');
-			return new Promise((resolve, reject) => {
-				reject()
-			});
-		}
-		assert.throws(throws, {message: 'TEST'});
-	});
-*/
     it('bad XML', (done) => {
 		var cust = {id: 'J287011', country: 'Colombia'};
-		assert.rejects(() => ofac.search(cust, 't/bad.xml'), {message: 'TEST'});
+		assert.rejects(
+			() => ofac.search(cust, 't/bad.xml').finally(done), 
+			{message: 'Unhandled error. ([object Object])'}
+		);
 	});
 });
 
