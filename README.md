@@ -1,12 +1,16 @@
 # OFAC 
 
 A division of the US Treasury Department, the Office of Foreign Asset Control (OFAC) maintains
-a database of individuals, corporations and other entities under sanctions, the so-called Specially
-Designated Nationals and Blocked Persons list (SDN).  The database can be queried via the web at:
+information related to KYC programs, particularly lists of individuals and other entities under
+sanctions
 
-https://sanctionssearch.ofac.treas.gov
+This module allows for local queries against the Specially Designated Nationals and Blocked 
+Persons list (SDN), which can normally be queried via the web at:
 
-but OFAC also makes the data available for download in XML format
+    https://sanctionssearch.ofac.treas.gov
+
+Fortunately, OFAC makes the data available for download in XML format such that queries
+can become programmable
 
 ## Installation
 
@@ -96,4 +100,9 @@ pull requests are most welcome
 
 ## Testing
 
-At present there are 
+You can run the usual:
+```
+npm test
+```
+The tests are run in Mocha with plain-vanilla asserts.  Deeper testing would be recommended but
+will leave to others
