@@ -27,32 +27,37 @@ var expected = [{
 	}
 }];
 
-
-describe('Main', () => {
-	before(() => {
-		ofac.init();
-	})
-	it('id/country', async () => {
-		var cust = {id: 'J287011', country: 'Colombia'};
-		var actual = await ofac.search(cust, fn);
-		assert.deepEqual(actual, expected);
-	});
-    it('first/last', async () => {
-		var cust = {firstName: 'Helmer', lastName: 'Herrera-Buitrago'};
-		var actual = await ofac.search(cust, fn);
-		assert.deepEqual(actual, expected, 'Name search differs');
-    });
-    it('aliases', async () => {
-		var cust = {firstName: 'Helmer', lastName: 'pacho'};
-		var actual = await ofac.search(cust, fn);
-		assert.deepEqual(actual, expected, 'Name search differs');
-	});
-    it('bad XML', (done) => {
-		var cust = {id: 'J287011', country: 'Colombia'};
-		assert.rejects(
-			() => ofac.search(cust, 't/bad.xml').finally(done), 
-			{message: 'Unhandled error. ([object Object])'}
-		);
+describe('OFAC', () => {
+	describe('search', () => {
+		before(() => {
+			ofac.init();
+		})
+		it('Searched by id/country', async () => {
+			var cust = {id: 'J287011', country: 'Colombia'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, expected);
+		});
+		it('Searched by first/last', async () => {
+			var cust = {firstName: 'Helmer', lastName: 'Herrera-Buitrago'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, expected, 'Name search differs');
+		});
+		it('Checked aliases', async () => {
+			var cust = {firstName: 'Helmer', lastName: 'pacho'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, expected, 'Name search differs');
+		});
+		it('Bad XML produces exception', (done) => {
+			var cust = {id: 'J287011', country: 'Colombia'};
+			assert.rejects(
+				() => ofac.search(cust, 't/bad.xml').finally(done), 
+				{message: 'Unhandled error. ([object Object])'}
+			);
+		});
+		it('No match found', async () => {
+			var cust = {firstName: 'XX', lastName: 'XX'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, [], 'Empty array expected');
+		});
 	});
 });
-
