@@ -20,7 +20,7 @@ var self = module.exports = {
 
         self.db = await self.zipInfo(fn, 'path');
         if (!fs.existsSync(self.db) || force)
-            self.unzip(fn);
+            await self.unzip(fn);
 
         return self;
     },
@@ -33,14 +33,20 @@ var self = module.exports = {
         });
     },
     zipInfo: (fn, prop) => {
-        var str = fs.createReadStream(fn).pipe(unzip.Parse());
         return new Promise((resolve, reject) => {
-            str.on('error', reject);
-            str.on('entry', entry => resolve(prop ? entry[prop] : entry));
+            fs.createReadStream(fn)
+                .pipe(unzip.Parse())
+                .on('error', reject)
+                .on('entry', entry => resolve(prop ? entry[prop] : entry));
         });
     },
     unzip: (fn, path = './') => {
-        fs.createReadStream(fn).pipe(unzip.Extract({ path }));
+        return new Promise((resolve, reject) => {
+            fs.createReadStream(fn)
+                .pipe(unzip.Extract({ path }))
+                .on('error', reject)
+                .on('close', resolve)
+        });
     },
     search: (cust, fn = self.db) => {
         // input data clean
