@@ -10,18 +10,25 @@ Persons list (SDN), which can normally be queried via the web at: https://sancti
 Fortunately, OFAC makes the data available for download in XML format such that queries
 can become programmable
 
-## Installation
+## Install
 
-The usual way:
+Fetch from from the repository
 ```
 npm install --save ofac
+```
+And set up a usable instance like this:
+```
+// using ES6 modules
+import ofaq from 'ofac';
+
+// using CommonJS modules
+const ofaq = require('ofac');
 ```
 
 ## API
 
-In the CommonJs paradigm, we require the module and subsequently initialise it:
+The module must be initialised:
 ```
-const ofaq = require('ofac');
 ofaq.init().then(...);
 ```
 ### init(force)

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const readline = require('readline');
 const fetch = require('node-fetch');
-const unzip = require('unzip');
+const zip = require('node-stream-zip');
 const xml2js = require('xml2js');
 
 function urlfn(url) {
@@ -18,9 +18,8 @@ var self = module.exports = {
         if (!fs.existsSync(fn) || force)
             await self.fetch();
 
-        self.db = await self.zipInfo(fn, 'path');
         if (!fs.existsSync(self.db) || force)
-            await self.unzip(fn);
+            self.db = await self.zipExtract(fn);
 
         return self;
     },
@@ -32,20 +31,18 @@ var self = module.exports = {
             return fn;
         });
     },
-    zipInfo: (fn, prop) => {
+    zipExtract: (fn, path = './') => {
+        var z = new zip({file: fn});
         return new Promise((resolve, reject) => {
-            fs.createReadStream(fn)
-                .pipe(unzip.Parse())
-                .on('error', reject)
-                .on('entry', entry => resolve(prop ? entry[prop] : entry));
-        });
-    },
-    unzip: (fn, path = './') => {
-        return new Promise((resolve, reject) => {
-            fs.createReadStream(fn)
-                .pipe(unzip.Extract({ path }))
-                .on('error', reject)
-                .on('close', resolve)
+            var xfn = 'sdn.xml';
+            z.on('error', reject);
+            z.on('ready', () => {
+                z.extract(xfn, path, err => {
+                    if (err) reject(err);
+                    resolve(xfn);
+                    z.close();
+                })
+            });
         });
     },
     search: (cust, fn = self.db) => {

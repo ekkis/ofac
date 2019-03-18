@@ -1,3 +1,4 @@
+var fs = require('fs');
 var assert = require('assert').strict;
 const ofac = require('../index.js');
 const fn = 't/t.xml';
@@ -28,6 +29,20 @@ var expected = [{
 }];
 
 describe('OFAC', () => {
+	describe('Archive', () => {
+		var zip = 'sdn_xml.zip', fn = 'sdn.xml';
+		before(() => {
+			if (fs.existsSync(fn)) fs.unlinkSync(fn);
+		})
+		it('Extraction', async () => {
+			assert.ok(fs.existsSync(zip), 'Archive does not exist');
+			assert.ok(!fs.existsSync(fn), 'Extract exists');
+
+			var actual = await ofac.zipExtract(zip);
+			assert.equal(actual, fn, 'Extracted a different file');
+			assert.ok(fs.existsSync(fn), 'Extract file does not exist');
+		});
+	});
 	describe('search', () => {
 		before(() => {
 			ofac.init();
