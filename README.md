@@ -77,16 +77,9 @@ prove problematic
 If the url is left unspecified, the canonical location of the SDN is used
 
 The method returns the file name used, wrapped in a promise
-### zipInfo(filename, [property])
-* filename - specifies the name of the file to read
-* property - optionally passed, retrieves only a property of the meta-data
-
-This method returns meta-data on a Zip archive as produced by the `unzip` module.  When 
-the second parameter is specified, it names the property of the object to return instead
-
-The method returns a promise
-### unzip(filename, [path])
-* filename - the name of the file to unpack
+### zipExtract(archive, filename, [path])
+* archive - the name of the archive from which to extract
+* filename - the name of the file to extract
 * path - the location to which the archive should be unpacked
 
 This method unpacks an archive.  If the path is left unspecified, the unpacks to the

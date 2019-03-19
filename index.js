@@ -1,45 +1,50 @@
 const fs = require('fs');
 const readline = require('readline');
 const fetch = require('node-fetch');
-const zip = require('node-stream-zip');
+const Zip = require('node-stream-zip');
 const xml2js = require('xml2js');
 
-function urlfn(url) {
-    return './' + url.replace(/.*\//, '');
-}
-
 var self = module.exports = {
-    FORCE: true,
     url: 'https://www.treasury.gov/ofac/downloads/sdn_xml.zip',
-    init: async (force = false) => {
+    opts: {
+        force: false,
+        path: '/tmp',
+        xml: 'sdn.xml'
+    },
+    init: async (opts = self.opts) => {
+        self.opts = Object.assign(self.opts, opts);
+        var {force} = self.opts;
+
         // if database already fetched, don't fetch again
 
-        var fn = urlfn(self.url);
+        var fn = self.fn(self.url);
         if (!fs.existsSync(fn) || force)
             await self.fetch();
 
-        if (!fs.existsSync(self.db) || force)
-            self.db = await self.zipExtract(fn);
+        if (!fs.existsSync(self.fn(self.opts.xml)) || force)
+            await self.zipExtract(fn, self.opts.xml, self.opts.path);
 
         return self;
     },
+    fn: (url) => {
+        return self.opts.path + '/' + url.replace(/.*\//, '');
+    },
     fetch: (url = self.url) => {
         return fetch(url).then(res => {
-            var fn = urlfn(url);
+            var fn = self.fn(url);
             const dest = fs.createWriteStream(fn);
             res.body.pipe(dest);
             return fn;
         });
     },
-    zipExtract: (fn, path = './') => {
-        var z = new zip({file: fn});
+    zipExtract: (zip, fn, dest = './') => {
+        var z = new Zip({file: zip});
         return new Promise((resolve, reject) => {
-            var xfn = 'sdn.xml';
             z.on('error', reject);
             z.on('ready', () => {
-                z.extract(xfn, path, err => {
+                z.extract(fn, dest, err => {
                     if (err) reject(err);
-                    resolve(xfn);
+                    resolve(dest + fn);
                     z.close();
                 })
             });

@@ -38,9 +38,9 @@ describe('OFAC', () => {
 			assert.ok(fs.existsSync(zip), 'Archive does not exist');
 			assert.ok(!fs.existsSync(fn), 'Extract exists');
 
-			var actual = await ofac.zipExtract(zip);
-			assert.equal(actual, fn, 'Extracted a different file');
-			assert.ok(fs.existsSync(fn), 'Extract file does not exist');
+			var actual = await ofac.zipExtract(zip, fn, '/tmp/');
+			assert.equal(actual, '/tmp/' + fn, 'Extracted a different file');
+			assert.ok(fs.existsSync('/tmp/' + fn), 'Extract file does not exist');
 		});
 	});
 	describe('search', () => {
