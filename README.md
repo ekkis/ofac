@@ -15,11 +15,11 @@ can become programmable
 ## Install
 
 Fetch from from the repository
-```
+```javascript
 npm install --save ofac
 ```
 And set up a usable instance like this:
-```
+```javascript
 // using ES6 modules
 import ofaq from 'ofac';
 
@@ -30,7 +30,7 @@ const ofaq = require('ofac');
 ## API
 
 The module must be initialised:
-```
+```javascript
 ofaq.init().then(...);
 ```
 ### init(force)
