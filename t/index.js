@@ -1,7 +1,7 @@
 var fs = require('fs');
 var assert = require('assert').strict;
 const ofac = require('../index.js');
-const fn = 't/t.xml';
+const fn = '/tmp/sdn.xml';
 
 var expected = [{
 	uid: '4106',
@@ -30,20 +30,24 @@ var expected = [{
 
 describe('OFAC', () => {
 	describe('Archive', () => {
-		var zip = 'sdn_xml.zip', fn = 'sdn.xml';
+		var zip = 't/sdn.xml.zip', fn = 'sdn.xml';
 		before(() => {
-			if (fs.existsSync(fn)) fs.unlinkSync(fn);
+			let path = '/tmp/' + fn;
+			if (fs.existsSync(path)) fs.unlinkSync(path);
 		})
 		it('Extraction', async () => {
+			var path = '/tmp/' + fn;
 			assert.ok(fs.existsSync(zip), 'Archive does not exist');
-			assert.ok(!fs.existsSync(fn), 'Extract exists');
+			assert.ok(!fs.existsSync(path), 'Extract exists');
 
-			var actual = await ofac.zipExtract(zip, fn, '/tmp/');
-			assert.equal(actual, '/tmp/' + fn, 'Extracted a different file');
-			assert.ok(fs.existsSync('/tmp/' + fn), 'Extract file does not exist');
+			var actual = await ofac.zipExtract(zip, fn, '/tmp');
+			assert.equal(actual, path, 'Extracted a different file');
+			assert.ok(fs.existsSync(path), 'Extract file does not exist');
+			var stats = fs.statSync(path);
+			assert.equal(stats.size, 10128, 'File incomplete')
 		});
 	});
-	describe('search', () => {
+	describe('Search', () => {
 		before(() => {
 			ofac.init();
 		})
@@ -52,8 +56,28 @@ describe('OFAC', () => {
 			var actual = await ofac.search(cust, fn);
 			assert.deepEqual(actual, expected);
 		});
+		it('Searched by id/country with type', async () => {
+			var cust = {id: 'J287011', id_type: 'Passport', country: 'Colombia'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, expected);
+		});
+		it('Searched by id/country with wrong type', async () => {
+			var cust = {id: 'J287011', id_type: 'Cedula No.', country: 'Colombia'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, []);
+		});
 		it('Searched by first/last', async () => {
-			var cust = {firstName: 'Helmer', lastName: 'Herrera-Buitrago'};
+			var cust = {firstName: 'Helmer', lastName: 'HERRERA BUITRAGO'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, expected, 'Name search differs');
+		});
+		it('Searched case insensitive', async () => {
+			var cust = {firstName: 'Helmer', lastName: 'herrera buitrago'};
+			var actual = await ofac.search(cust, fn);
+			assert.deepEqual(actual, expected, 'Name search differs');
+		});
+		it('Searched clean names', async () => {
+			var cust = {firstName: 'Helmer', lastName: 'herrera-buitrago'};
 			var actual = await ofac.search(cust, fn);
 			assert.deepEqual(actual, expected, 'Name search differs');
 		});
@@ -66,7 +90,7 @@ describe('OFAC', () => {
 			var cust = {id: 'J287011', country: 'Colombia'};
 			assert.rejects(
 				() => ofac.search(cust, 't/bad.xml').finally(done), 
-				{message: 'Unhandled error. ([object Object])'}
+				{message: 'Error: Unexpected close tag\nLine: 0\nColumn: 317\nChar: >'}
 			);
 		});
 		it('No match found', async () => {

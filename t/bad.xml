@@ -1,0 +1,23 @@
+<?xml version="1.0" standalone="yes"?>
+<sdnList xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://tempuri.org/sdnList.xsd">
+  <publshInformation>
+    <Publish_Date>03/11/2019</Publish_Date>
+    <Record_Count>7449</Record_Count>
+  </publshInformation>
+  <sdnEntry>
+    <uid>
+    <firstName>Helmer</firstName>
+    <lastName>HERRERA BUITRAGO</lastName>
+    <sdnType>Individual</sdnType>
+    <programList>
+      <program>SDNT</program>
+    </programList>
+    <idList>
+      <id>
+        <type>a.k.a.</type>
+        <category>weak</category>
+        <lastName>H7</lastName>
+      </aka>
+    </akaList>
+  </sdnEntry>
+</sdnList>

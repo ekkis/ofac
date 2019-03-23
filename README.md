@@ -1,3 +1,5 @@
+ [![npm version](https://badge.fury.io/js/ofac.svg)](https://badge.fury.io/js/ofac)
+
 # OFAC 
 
 A division of the US Treasury Department, the Office of Foreign Asset Control (OFAC) maintains
@@ -47,16 +49,23 @@ than the default.  Useful for testing
 The customer object may contain the following properties, passed in pairs:
 ```javascript
 {
-    id, country,            // and/or
+    search_type: 'Individual',
+    id, id_type, country,            // and/or
     firstName, lastName
 }
 ```
-where `id` represents a passport number or other national identification number.  
+where:
+* `search_type` defines the database domain within which to search.  If left unspecified
+the module defaults to searches of individuals
+* `id` represents a passport number or other national identification number
+* `id_type` specifies the type of document to search for e.g. passport, national
+ID card, etc.  If left unspecified all document types are searched.  For more information
+on the types supported, please refer to the OFAC website.
 
-The search algorithm gives priority to the id/country as it is more authoritative (and 
-both are required since the same id may exist in different countries) but failing to find 
-it match it opts for first name and last name.  These values are matched against the canonical 
-name of the individual but are also match against a possible list of aliases.  Searches are
+The search algorithm gives priority to the id/country as this information is more authoritative
+(and both are required since the same id may exist in different countries) but failing to find 
+a match it opts for first name and last name.  These values are matched against the canonical 
+name of the individual but are also matched against a possible list of aliases.  Searches are
 performed against sanitised data, thus "Stella-Marie" will match "Stella Marie", "STELLA MARIE"
 "stella marie", "stella/marie", and other variants
 

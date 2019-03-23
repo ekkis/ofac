@@ -21,7 +21,8 @@ var self = module.exports = {
         if (!fs.existsSync(fn) || force)
             await self.fetch();
 
-        if (!fs.existsSync(self.fn(self.opts.xml)) || force)
+        self.db = self.fn(self.opts.xml);
+        if (!fs.existsSync(self.db) || force)
             await self.zipExtract(fn, self.opts.xml, self.opts.path);
 
         return self;
@@ -37,20 +38,21 @@ var self = module.exports = {
             return fn;
         });
     },
-    zipExtract: (zip, fn, dest = './') => {
+    zipExtract: (zip, fn, dest = '.') => {
         var z = new Zip({file: zip});
         return new Promise((resolve, reject) => {
             z.on('error', reject);
             z.on('ready', () => {
                 z.extract(fn, dest, err => {
                     if (err) reject(err);
-                    resolve(dest + fn);
+                    resolve(dest + '/' + fn);
                     z.close();
                 })
             });
         });
     },
     search: (cust, fn = self.db) => {
+        if (!cust.search_type) cust.search_type = 'individual';
         // input data clean
         
         cust = lc(cust);
@@ -79,11 +81,11 @@ var self = module.exports = {
 
             collect = false;
             xml2js.parseString(xml, {explicitArray: false}, (err, res) => {
-                // if (err) throw new Error(err);
-                if (err) throw {message: 'TEST'};
-        
-                // look only an individual profiles
-                if (res.sdnEntry.sdnType != 'Individual') return;
+                if (err) throw new Error(err);
+
+                // look only for profiles of the given type
+                if (res.sdnEntry.sdnType.toLowerCase() != cust.search_type)
+                    return;
 
                 // fix XML transform
                 res = x(res);
@@ -93,6 +95,7 @@ var self = module.exports = {
             });
             xml = '';
         }
+
         function lc(o) {
             for (var k in o) if (o.hasOwnProperty(k) && typeof o[k] == 'string')
                 o[k] = o[k].toLowerCase();
@@ -123,16 +126,23 @@ var self = module.exports = {
         function cmp(cust, res) {
             // seek a match on id/country
 
-            for (var i = 0; i < res.idList.length; i++) {
-                let ok = res.idList[i].idNumber == cust.id;
-                ok = ok && res.idList[i].idCountry == cust.country;
-                if (ok) return true;
-            }
+            var ok = res.idList.filter(o => {
+                let ok = o.idNumber == cust.id;
+                if (o.idCountry && cust.country)
+                    ok = ok && o.idCountry == cust.country;
+                if (o.idType && cust.id_type)
+                    ok = ok && o.idType == cust.id_type;
+                return ok;
+            });
+            if (ok.length > 0) return true;
 
             // if not match emerges, try by name
 
-            let ok = res.firstName == cust.firstName;
-            ok = ok && res.lastName == cust.lastName;
+            ok = cust.firstName || cust.lastName;
+            if (res.firstName && cust.firstName)
+                ok = ok && res.firstName == cust.firstName;
+            if (res.lastName && cust.lastName)
+                ok = ok && res.lastName == cust.lastName;
             if (ok) return true;
             
             // failing that we try AKAs
