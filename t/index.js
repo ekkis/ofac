@@ -48,9 +48,6 @@ describe('OFAC', () => {
 		});
 	});
 	describe('Search', () => {
-		before(() => {
-			ofac.init();
-		})
 		it('Searched by id/country', async () => {
 			var cust = {id: 'J287011', country: 'Colombia'};
 			var actual = await ofac.search(cust, fn);

@@ -64,15 +64,15 @@ var self = module.exports = {
         });
 
         var xml = '', ret = [], collect = false;
-        
-        return new Promise((resolve, reject) => {
+
+        return self.init().then(() => new Promise((resolve, reject) => {
             lineReader.on('line', line => {
                 try { collector(line) }
                 catch(e) { reject(e) }
             })
             .on('error', reject)
             .on('close', () => resolve(ret));
-        });
+        }));
 
         function collector(line) {
             if (line.match(/<sdnEntry>/)) collect = true;

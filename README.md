@@ -21,27 +21,36 @@ npm install --save ofac
 And set up a usable instance like this:
 ```javascript
 // using ES6 modules
-import ofaq from 'ofac';
+import ofac from 'ofac';
 
 // using CommonJS modules
-const ofaq = require('ofac');
+const ofac = require('ofac');
 ```
 
 ## API
 
-The module must be initialised:
+The module can be initialised first or just used directly:
 ```javascript
-ofaq.init().then(...);
+// example of initialisation
+ofac.init({xml: 'sdn2.xml'}).then(() => ofac.search(...)));
+
+// direct use
+ofac.search(...).then(...);
 ```
-### init(force)
+### init(opts)
+
 * force (boolean) - indicates that a fresh fetch of the database should be made
+* path - the path where the downloaded archive and extracted database should be stored (default: `/tmp`) 
+* xml - the name of the file name expected within the archive (default: `sdn.xml`)
 
 The module downloads, and unpacks the OFAC database unto the local directory and performs
 this only once, unless forced to do so again.  The file is downloaded in Zip format and is
 thus light on demand for bandwidth
 
 The method returns a NodeJs native promise wrapped around the module itself to allow chaining
+
 ### search(cust, [filename])
+
 * cust - an object consisting of properties to look for in the database
 * filename - an optional filename allowing the caller to run searches against a file other
 than the default.  Useful for testing
@@ -86,6 +95,7 @@ prove problematic
 If the url is left unspecified, the canonical location of the SDN is used
 
 The method returns the file name used, wrapped in a promise
+
 ### zipExtract(archive, filename, [path])
 * archive - the name of the archive from which to extract
 * filename - the name of the file to extract
@@ -115,6 +125,7 @@ The tests are run in Mocha with plain-vanilla asserts.  Deeper testing would be 
 will leave to others
 
 ## Example
+
 For more extensive examples please see the test suite
 ```javascript
 const ofac = require('ofac');
