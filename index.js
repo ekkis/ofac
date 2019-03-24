@@ -9,10 +9,14 @@ var self = module.exports = {
     opts: {
         force: false,
         path: '/tmp',
-        xml: 'sdn.xml'
+        xml: 'sdn.xml',
+        fetch: (url, opts) => fetch(url.opts)
+    },
+    config: (opts) => {
+        self.opts = Object.assign(self.opts, opts);
     },
     init: async (opts = self.opts) => {
-        self.opts = Object.assign(self.opts, opts);
+        self.config(opts);  
         var {force} = self.opts;
 
         // if database already fetched, don't fetch again
@@ -25,13 +29,13 @@ var self = module.exports = {
         if (!fs.existsSync(self.db) || force)
             await self.zipExtract(fn, self.opts.xml, self.opts.path);
 
-        return self;
+        return self.db;
     },
     fn: (url) => {
         return self.opts.path + '/' + url.replace(/.*\//, '');
     },
     fetch: (url = self.url) => {
-        return fetch(url).then(res => {
+        return self.opts.fetch(url).then(res => {
             var fn = self.fn(url);
             const dest = fs.createWriteStream(fn);
             res.body.pipe(dest);
@@ -51,29 +55,28 @@ var self = module.exports = {
             });
         });
     },
-    search: (cust, fn = self.db) => {
-        if (!fn) fn = self.db = self.fn(self.opts.xml);
+    search: async (cust, fn = self.db) => {
+        if (!fn) fn = await self.init();
         if (!cust.search_type) cust.search_type = 'individual';
-        // input data clean
         
+        // clean input data
         cust = lc(cust);
 
         // read database file line by line
-
         var lineReader = readline.createInterface({
             input: fs.createReadStream(fn)
         });
 
         var xml = '', ret = [], collect = false;
 
-        return self.init().then(() => new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             lineReader.on('line', line => {
                 try { collector(line) }
                 catch(e) { reject(e) }
             })
             .on('error', reject)
             .on('close', () => resolve(ret));
-        }));
+        });
 
         function collector(line) {
             if (line.match(/<sdnEntry>/)) collect = true;

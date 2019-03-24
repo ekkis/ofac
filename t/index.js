@@ -29,7 +29,26 @@ var expected = [{
 }];
 
 describe('OFAC', () => {
-	describe('Archive', () => {
+	describe('Archive fetch', () => {
+		var zip = '/tmp/sdn.xml.zip';
+		before(() => {
+			function pipe(dest) {
+				var rs = fs.createReadStream('t/sdn.xml.zip')
+				rs.pipe(dest);
+			}
+			ofac.config({
+				fetch: () => Promise.resolve({body: {pipe}})
+			})
+			if (fs.existsSync(zip)) fs.unlinkSync(zip);
+		});
+		it('File created', () => {
+			return ofac.fetch('sdn.xml.zip').then(fn => {
+				assert.ok(fn == zip, 'Incorrect file name')
+				assert.ok(fs.existsSync(fn, 'File was not fetched'))
+			})
+		})
+	})
+	describe('Archive extraction', () => {
 		var zip = 't/sdn.xml.zip', fn = 'sdn.xml';
 		before(() => {
 			let path = '/tmp/' + fn;
@@ -50,46 +69,49 @@ describe('OFAC', () => {
 		});
 	});
 	describe('Search', () => {
-		it('Uses internal path', async () => {
-			var cust = {id: 'J287011', country: 'Colombia'};
-			var actual = await ofac.search(cust);
-			assert.deepEqual(actual, expected);
-		})
 		it('Searched by id/country', async () => {
 			var cust = {id: 'J287011', country: 'Colombia'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected);
 		});
 		it('Searched by id/country with type', async () => {
 			var cust = {id: 'J287011', id_type: 'Passport', country: 'Colombia'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected);
 		});
 		it('Searched by id/country with wrong type', async () => {
 			var cust = {id: 'J287011', id_type: 'Cedula No.', country: 'Colombia'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, []);
 		});
 		it('Searched by first/last', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'HERRERA BUITRAGO'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
 		});
 		it('Searched case insensitive', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'herrera buitrago'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
 		});
 		it('Searched clean names', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'herrera-buitrago'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
 		});
 		it('Checked aliases', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'pacho'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
 		});
+		it('Uses external path', async () => {
+			var moved = fn.replace(/xml$/, 'moved.xml')
+			fs.renameSync(fn, moved)
+			assert.ok(fs.existsSync(moved), 'File move failed')
+			var cust = {id: 'J287011', country: 'Colombia'};
+			var actual = await ofac.search(cust, '/tmp/sdn.moved.xml');
+			assert.deepEqual(actual, expected);
+		})
 		it('Bad XML produces exception', (done) => {
 			var cust = {id: 'J287011', country: 'Colombia'};
 			assert.rejects(
@@ -99,7 +121,7 @@ describe('OFAC', () => {
 		});
 		it('No match found', async () => {
 			var cust = {firstName: 'XX', lastName: 'XX'};
-			var actual = await ofac.search(cust, fn);
+			var actual = await ofac.search(cust, '/tmp/sdn.moved.xml');
 			assert.deepEqual(actual, [], 'Empty array expected');
 		});
 	});

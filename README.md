@@ -124,17 +124,14 @@ npm test
 The tests are run in Mocha with plain-vanilla asserts.  Deeper testing would be recommended but
 will leave to others
 
-## Example
+## Examples
 
 For more extensive examples please see the test suite
 ```javascript
 const ofac = require('ofac');
-ofac.init()
-    .then(() => {
-        var cust = {id: 'J287011', country: 'Colombia'};
-        return ofac.search(cust);
-    })
-    .then(console.log);
+
+var cust = {id: 'J287011', country: 'Colombia'};
+ofac.search(cust).then(console.log);
 ```
 will produce something like:
 ```json
@@ -162,3 +159,11 @@ will produce something like:
         ]   
     }   
 }]
+```
+## Licence
+MIT
+
+## Support
+
+For support post an issue on Github or reach out to me on Telegram.
+My username is [@ekkis](https://t.me/ekkis)

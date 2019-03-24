@@ -1,7 +1,7 @@
 {
   "name": "ofac",
   "version": "1.0.6",
-  "description": "A module to facilitate OFAC searches",
+  "description": "A module to facilitate local OFAC searches",
   "main": "index.js",
   "scripts": {
     "test": "mocha t/**/*.js"
