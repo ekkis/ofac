@@ -1,6 +1,6 @@
 {
   "name": "ofac",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A module to facilitate local OFAC searches",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,9 @@
     "url": "git+https://github.com/ekkis/ofac.git"
   },
   "keywords": [
-    "ofac", "kyc", "compliance"
+    "ofac",
+    "kyc",
+    "compliance"
   ],
   "author": "ekkis <e@arix.com>",
   "license": "MIT",
