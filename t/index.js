@@ -41,13 +41,20 @@ describe('OFAC', () => {
 			assert.ok(!fs.existsSync(path), 'Extract exists');
 
 			var actual = await ofac.zipExtract(zip, fn, '/tmp');
+
 			assert.equal(actual, path, 'Extracted a different file');
 			assert.ok(fs.existsSync(path), 'Extract file does not exist');
+			
 			var stats = fs.statSync(path);
 			assert.equal(stats.size, 10128, 'File incomplete')
 		});
 	});
 	describe('Search', () => {
+		it('Uses internal path', async () => {
+			var cust = {id: 'J287011', country: 'Colombia'};
+			var actual = await ofac.search(cust);
+			assert.deepEqual(actual, expected);
+		})
 		it('Searched by id/country', async () => {
 			var cust = {id: 'J287011', country: 'Colombia'};
 			var actual = await ofac.search(cust, fn);

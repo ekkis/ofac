@@ -52,6 +52,7 @@ var self = module.exports = {
         });
     },
     search: (cust, fn = self.db) => {
+        if (!fn) fn = self.db = self.fn(self.opts.xml);
         if (!cust.search_type) cust.search_type = 'individual';
         // input data clean
         
