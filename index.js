@@ -46,6 +46,7 @@ var self = module.exports = {
     zipExtract: (zip, fn, dest = '.') => {
         var z = new Zip({file: zip});
         return new Promise((resolve, reject) => {
+            var ret = {zip, fn: dest + '/' + fn};
             z.on('error', (err) => {
                 reject(Object.assign(ret, {src: 'on', err}));
             });

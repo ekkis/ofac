@@ -54,6 +54,28 @@ describe('OFAC', () => {
 			let path = '/tmp/' + fn;
 			if (fs.existsSync(path)) fs.unlinkSync(path);
 		})
+		it('File does not exist', () => {
+			return ofac.zipExtract(zip + '-fail', fn, '/tmp')
+				.then(() => {
+					assert.ok(false, 'Should have failed')
+				})
+				.catch(e => {
+					var expected = {
+						zip: "t/sdn.xml.zip-fail",
+						fn: "/tmp/sdn.xml",
+						src: "on",
+						err: {
+							errno: -2,
+							code: "ENOENT",
+							syscall: "open",
+							path: "t/sdn.xml.zip-fail"
+						}
+					};
+
+					e = JSON.parse(JSON.stringify(e)) // errors stringify differently
+					assert.deepEqual(e, expected, 'Did not fail when it should have')
+				})
+		})
 		it('Extraction', async () => {
 			var path = '/tmp/' + fn;
 			assert.ok(fs.existsSync(zip), 'Archive does not exist');
