@@ -88,44 +88,56 @@ describe('OFAC', () => {
 			
 			var stats = fs.statSync(path);
 			assert.equal(stats.size, 10128, 'File incomplete')
-		});
-	});
+		})
+	})
+	describe('Archive information', () => {
+		var info;
+		before(async () => {
+			info = await ofac.dbinfo();
+		})
+		it('Returns publish date', () => {
+			assert.equal(info['Publish Date'], '03/11/2019', 'Date extraction failed')
+		})
+		it('Returns record count', () => {
+			assert.equal(info['Record Count'], '7449', 'Record count extraction failed')
+		})
+	})
 	describe('Search', () => {
 		it('Searched by id/country', async () => {
 			var cust = {id: 'J287011', country: 'Colombia'};
 			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected);
-		});
+		})
 		it('Searched by id/country with type', async () => {
 			var cust = {id: 'J287011', id_type: 'Passport', country: 'Colombia'};
 			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected);
-		});
+		})
 		it('Searched by id/country with wrong type', async () => {
 			var cust = {id: 'J287011', id_type: 'Cedula No.', country: 'Colombia'};
 			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, []);
-		});
+		})
 		it('Searched by first/last', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'HERRERA BUITRAGO'};
 			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
-		});
+		})
 		it('Searched case insensitive', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'herrera buitrago'};
 			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
-		});
+		})
 		it('Searched clean names', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'herrera-buitrago'};
 			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
-		});
+		})
 		it('Checked aliases', async () => {
 			var cust = {firstName: 'Helmer', lastName: 'pacho'};
 			var actual = await ofac.search(cust);
 			assert.deepEqual(actual, expected, 'Name search differs');
-		});
+		})
 		it('Uses external path', async () => {
 			var moved = fn.replace(/xml$/, 'moved.xml')
 			fs.renameSync(fn, moved)
@@ -140,11 +152,11 @@ describe('OFAC', () => {
 				() => ofac.search(cust, 't/bad.xml').finally(done), 
 				{message: 'Error: Unexpected close tag\nLine: 0\nColumn: 317\nChar: >'}
 			);
-		});
+		})
 		it('No match found', async () => {
 			var cust = {firstName: 'XX', lastName: 'XX'};
 			var actual = await ofac.search(cust, '/tmp/sdn.moved.xml');
 			assert.deepEqual(actual, [], 'Empty array expected');
-		});
-	});
-});
+		})
+	})
+})

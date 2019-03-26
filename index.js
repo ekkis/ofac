@@ -59,6 +59,23 @@ var self = module.exports = {
             });
         });
     },
+    dbinfo: async () => {
+        var ret = {};
+        if (!self.db) await self.init();
+        return new Promise((resolve, reject) => {
+            var ln = readline.createInterface({
+                input: fs.createReadStream(self.db)
+            });
+            ln.on('line', function (line) {
+                var m = line.match(/(Publish_Date|Record_Count)/);
+                if (m) ret[m[1].replace('_', ' ')] = line.replace(/<.*?>/g, '').trim();
+                if (ret['Record Count']) {
+                    ln.close();
+                    resolve(ret);
+                }
+            });
+        });
+    },
     search: async (cust, fn = self.db) => {
         if (!fn) fn = await self.init();
         if (!cust.search_type) cust.search_type = 'individual';
