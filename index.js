@@ -10,7 +10,7 @@ var self = module.exports = {
         force: false,
         path: '/tmp',
         xml: 'sdn.xml',
-        fetch: (url, opts) => fetch(url.opts)
+        fetch: (url, opts) => fetch(url, opts)
     },
     config: (opts) => {
         self.opts = Object.assign(self.opts, opts);
