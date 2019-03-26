@@ -15,46 +15,45 @@ var self = module.exports = {
     config: (opts) => {
         self.opts = Object.assign(self.opts, opts);
     },
-    init: async (opts = self.opts) => {
+    init: (opts = self.opts) => {
         self.config(opts);  
-        var {force} = self.opts;
 
-        // if database already fetched, don't fetch again
-
-        var fn = self.fn(self.url);
-        if (!fs.existsSync(fn) || force)
-            await self.fetch();
-
-        self.db = self.fn();
-        if (!fs.existsSync(self.db) || force)
-            await self.zipExtract(fn, self.opts.xml, self.opts.path);
-
-        return self.db;
+        return self.fetch()
+            .then(zip => self.zipExtract(zip))
+            .then(xml => self.db = xml);
     },
     fn: (url) => {
         if (!url) url = self.opts.xml;
         return self.opts.path + '/' + url.replace(/.*\//, '');
     },
     fetch: (url = self.url) => {
-        return self.opts.fetch(url).then(res => {
-            var fn = self.fn(url);
-            const dest = fs.createWriteStream(fn);
-            res.body.pipe(dest);
-            return fn;
-        });
+        var fn = self.fn(url);
+
+        return (fs.existsSync(fn) && !self.opts.force)
+            ? Promise.resolve(fn)
+            : self.opts.fetch(url).then(res => {
+                const dest = fs.createWriteStream(fn);
+                res.body.pipe(dest);
+                return fn;
+            });
     },
-    zipExtract: (zip, fn, dest = '.') => {
+    zipExtract: (zip, fn = self.opts.xml, dest = self.opts.path) => {
+        var xml = dest + '/' + fn;
+        if (fs.existsSync(xml) && !self.opts.force)
+            return xml;
+
         var z = new Zip({file: zip});
         return new Promise((resolve, reject) => {
-            var ret = {zip, fn: dest + '/' + fn};
             z.on('error', (err) => {
-                reject(Object.assign(ret, {src: 'on', err}));
+                reject({zip, xml, src: 'on', err});
             });
             z.on('ready', () => {
                 z.extract(fn, dest, err => {
-                    if (err) reject(Object.assign(ret, {src: 'ready', err}));
-                    resolve(dest + '/' + fn);
-                    z.close();
+                    if (err) reject({zip, xml, src: 'ready', err});
+                    else {
+                        resolve(xml);
+                        z.close();
+                    }
                 })
             });
         });

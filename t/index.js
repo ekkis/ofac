@@ -62,7 +62,7 @@ describe('OFAC', () => {
 				.catch(e => {
 					var expected = {
 						zip: "t/sdn.xml.zip-fail",
-						fn: "/tmp/sdn.xml",
+						xml: "/tmp/sdn.xml",
 						src: "on",
 						err: {
 							errno: -2,
