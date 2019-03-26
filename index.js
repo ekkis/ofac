@@ -31,11 +31,12 @@ var self = module.exports = {
 
         return (fs.existsSync(fn) && !self.opts.force)
             ? Promise.resolve(fn)
-            : self.opts.fetch(url).then(res => {
+            : self.opts.fetch(url).then(res => new Promise((resolve, reject) => {
                 const dest = fs.createWriteStream(fn);
-                res.body.pipe(dest);
-                return fn;
-            });
+                res.body.pipe(dest, {end: true});
+                dest.on('close', () => resolve(fn));
+                dest.on('error', reject);
+            }));
     },
     zipExtract: (zip, fn = self.opts.xml, dest = self.opts.path) => {
         var xml = dest + '/' + fn;
