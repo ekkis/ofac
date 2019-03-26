@@ -25,13 +25,14 @@ var self = module.exports = {
         if (!fs.existsSync(fn) || force)
             await self.fetch();
 
-        self.db = self.fn(self.opts.xml);
+        self.db = self.fn();
         if (!fs.existsSync(self.db) || force)
             await self.zipExtract(fn, self.opts.xml, self.opts.path);
 
         return self.db;
     },
     fn: (url) => {
+        if (!url) url = self.opts.xml;
         return self.opts.path + '/' + url.replace(/.*\//, '');
     },
     fetch: (url = self.url) => {
@@ -45,10 +46,12 @@ var self = module.exports = {
     zipExtract: (zip, fn, dest = '.') => {
         var z = new Zip({file: zip});
         return new Promise((resolve, reject) => {
-            z.on('error', reject);
+            z.on('error', (err) => {
+                reject(Object.assign(ret, {src: 'on', err}));
+            });
             z.on('ready', () => {
                 z.extract(fn, dest, err => {
-                    if (err) reject(err);
+                    if (err) reject(Object.assign(ret, {src: 'ready', err}));
                     resolve(dest + '/' + fn);
                     z.close();
                 })

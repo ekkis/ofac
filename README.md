@@ -106,14 +106,17 @@ current directory
 
 ## Notes
 
-Since the data set tends to be largish, rather than converting the XML into a DOM for in-memory
+* Since the data set tends to be largish, rather than converting the XML into a DOM for in-memory
 searches, the module searches the file.  This takes a little longer (though it's actually pretty 
 fast) but it's super-light on RAM
 
-Also, at present searching is limited to first-name/last-name and id/country, and operates only on
+* Also, at present searching is limited to first-name/last-name and id/country, and operates only on
 Individual data (skips corporations, vessels and other types of entities) but the database contains
 richer information.  Anyone that wishes to match against other properties is welcome to write it,
 pull requests are most welcome
+
+* The data currently retrieved is contained in the `SDN_XML.zip` listed on this page:
+https://www.treasury.gov/resource-center/sanctions/SDN-List/Pages/sdn_data.aspx
 
 ## Testing
 
