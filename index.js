@@ -10,7 +10,7 @@ var self = module.exports = {
         force: false,
         path: '/tmp',
         xml: 'sdn.xml',
-        fetch: (url, opts) => fetch(url, opts)
+        fetch
     },
     config: (opts) => {
         self.opts = Object.assign(self.opts, opts);
@@ -34,7 +34,7 @@ var self = module.exports = {
             : self.opts.fetch(url).then(res => new Promise((resolve, reject) => {
                 const dest = fs.createWriteStream(fn);
                 res.body.pipe(dest, {end: true});
-                dest.on('close', () => resolve(fn));
+                res.body.on('close', () => resolve(fn));
                 dest.on('error', reject);
             }));
     },
@@ -122,41 +122,39 @@ var self = module.exports = {
         }
 
         function lc(o) {
-            for (var k in o) if (o.hasOwnProperty(k) && typeof o[k] == 'string')
-                o[k] = o[k].toLowerCase();
-            for (var k of 'firstName|lastName'.split('|'))
-                o[k] = (o[k] || '').replace(/\W/g, ' ');
+            var t = typeof o;
+            if (t == 'undefined') return '';
+            if (t == 'string') return o.toLowerCase();
+            if (Array.isArray(o) || t != 'object') return o;
+
+            o.each(o => typeof o == 'string' ? o.toLowerCase() : o);
+            for (var k of 'firstName/lastName'.split('/'))
+                if (o[k]) o[k] = (o[k] || '').replace(/\W/g, ' ');
+
             return o;
         }
 
         function x(o) {
             o = o.sdnEntry;
-            if (o.idList) {
-                o.idList = o.idList.id;
-                if (!Array.isArray(o.idList)) o.idList = [o.idList];
-                for (var i = 0; i < o.idList.length; i++)
-                    lc(o.idList[i]);
-            } else o.idList = [];
-
-            if (o.akaList) {
-                o.akaList = o.akaList.aka;
-                if (!Array.isArray(o.akaList)) o.akaList = [o.akaList];
-                for (var i = 0; i < o.akaList.length; i++)
-                    lc(o.akaList[i]);
-            } else o.akaList = [];
-
-            return lc(o);
+            for (var k in o) {
+                if (!k.match(/List$/)) continue;
+                if (!o[k]) { o[k] = []; continue; }
+                let kk = Object.keys(o[k])[0];
+                o[k] = (o[k] || {})[kk] || [];
+                if (!Array.isArray(o[k])) o[k] = [o[k]];
+            }
+            return o;
         }
 
         function cmp(cust, res) {
             // seek a match on id/country
 
             var ok = res.idList.filter(o => {
-                let ok = o.idNumber == cust.id;
+                let ok = lc(o.idNumber) == cust.id;
                 if (o.idCountry && cust.country)
-                    ok = ok && o.idCountry == cust.country;
+                    ok = ok && lc(o.idCountry) == cust.country;
                 if (o.idType && cust.id_type)
-                    ok = ok && o.idType == cust.id_type;
+                    ok = ok && lc(o.idType) == cust.id_type;
                 return ok;
             });
             if (ok.length > 0) return true;
@@ -165,19 +163,29 @@ var self = module.exports = {
 
             ok = cust.firstName || cust.lastName;
             if (res.firstName && cust.firstName)
-                ok = ok && res.firstName == cust.firstName;
+                ok = ok && lc(res.firstName) == cust.firstName;
             if (res.lastName && cust.lastName)
-                ok = ok && res.lastName == cust.lastName;
+                ok = ok && lc(res.lastName) == cust.lastName;
             if (ok) return true;
             
             // failing that we try AKAs
 
             for (var i = 0; i < res.akaList.length; i++) {
                 let o = res.akaList[i];
-                let ok = (o.firstName || res.firstName || '') == cust.firstName;
-                ok = ok && (o.lastName || res.lastName || '') == cust.lastName;
+                let ok = lc(o.firstName || res.firstName || '') == cust.firstName;
+                ok = ok && lc(o.lastName || res.lastName || '') == cust.lastName;
                 if (ok) return true;
             }
         }
     }
 };
+
+if (!Object.prototype.keys)
+    Object.prototype.keys = function() {
+        return Object.keys(this);
+    }
+
+if (!Object.prototype.each)
+    Object.prototype.each = function(fn) {
+        this.keys().map(k => this[k] = fn(this[k], k));
+    }

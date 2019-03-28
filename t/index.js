@@ -5,39 +5,34 @@ const fn = '/tmp/sdn.xml';
 
 var expected = [{
 	uid: '4106',
-	firstName: 'helmer',
-	lastName: 'herrera buitrago',
-	sdnType: 'individual',
-	programList: { program: 'SDNT' },
+	firstName: 'Helmer',
+	lastName: 'HERRERA BUITRAGO',
+	sdnType: 'Individual',
+	programList: [ 'SDNT' ],
 	idList: [
-		{ uid: '1011', idType: 'passport', idNumber: 'j287011', idCountry: 'colombia', firstName: '', lastName: '' },
-		{ uid: '1010', idType: 'cedula no.', idNumber: '16247821', idCountry: 'colombia', firstName: '', lastName: '' } 
+		{ uid: '1011', idType: 'Passport', idNumber: 'J287011', idCountry: 'Colombia' },
+		{ uid: '1010', idType: 'Cedula No.', idNumber: '16247821', idCountry: 'Colombia' } 
 	],
 	akaList: [
-		{ uid: '7776', type: 'a.k.a.', category: 'weak', lastName: 'pacho', firstName: '' },
-		{ uid: '7777', type: 'a.k.a.', category: 'weak', lastName: 'h7', firstName: '' } 
+		{ uid: '7776', type: 'a.k.a.', category: 'weak', lastName: 'PACHO' },
+		{ uid: '7777', type: 'a.k.a.', category: 'weak', lastName: 'H7' } 
 	],
-	addressList: {
-		address: { uid: '2006', city: 'Cali', country: 'Colombia' }
-	},
-	dateOfBirthList: {
-		dateOfBirthItem: [
-			{ uid: '1031', dateOfBirth: '24 Aug 1951', mainEntry: 'true' },
-			{ uid: '1032', dateOfBirth: '05 Jul 1951', mainEntry: 'false' }
-		]
-	}
+	addressList: [
+		{ uid: '2006', city: 'Cali', country: 'Colombia' }
+	],
+	dateOfBirthList: [
+		{ uid: '1031', dateOfBirth: '24 Aug 1951', mainEntry: 'true' },
+		{ uid: '1032', dateOfBirth: '05 Jul 1951', mainEntry: 'false' }
+	]
 }];
 
 describe('OFAC', () => {
 	describe('Archive fetch', () => {
 		var zip = '/tmp/sdn.xml.zip';
 		before(() => {
-			function pipe(dest) {
-				var rs = fs.createReadStream('t/sdn.xml.zip')
-				rs.pipe(dest);
-			}
+			var rs = fs.createReadStream('t/sdn.xml.zip')
 			ofac.config({
-				fetch: () => Promise.resolve({body: {pipe}})
+				fetch: () => Promise.resolve({body: rs})
 			})
 			if (fs.existsSync(zip)) fs.unlinkSync(zip);
 		});
