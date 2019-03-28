@@ -127,7 +127,9 @@ var self = module.exports = {
             if (t == 'string') return o.toLowerCase();
             if (Array.isArray(o) || t != 'object') return o;
 
-            o.each(o => typeof o == 'string' ? o.toLowerCase() : o);
+            Object.keys(o).forEach(k => {
+                if (typeof o[k] == 'string') o[k] = o[k].toLowerCase();
+            });
             for (var k of 'firstName/lastName'.split('/'))
                 if (o[k]) o[k] = (o[k] || '').replace(/\W/g, ' ');
 
@@ -179,13 +181,3 @@ var self = module.exports = {
         }
     }
 };
-
-if (!Object.prototype.keys)
-    Object.prototype.keys = function() {
-        return Object.keys(this);
-    }
-
-if (!Object.prototype.each)
-    Object.prototype.each = function(fn) {
-        this.keys().map(k => this[k] = fn(this[k], k));
-    }
