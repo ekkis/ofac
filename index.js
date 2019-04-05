@@ -151,6 +151,7 @@ var self = module.exports = {
         function cmp(cust, res) {
             // seek a match on id/country
 
+            if (!res.idList) res.idList = [];
             var ok = res.idList.filter(o => {
                 let ok = lc(o.idNumber) == cust.id;
                 if (o.idCountry && cust.country)
@@ -172,6 +173,7 @@ var self = module.exports = {
             
             // failing that we try AKAs
 
+            if (!res.akaList) res.akaList = [];
             for (var i = 0; i < res.akaList.length; i++) {
                 let o = res.akaList[i];
                 let ok = lc(o.firstName || res.firstName || '') == cust.firstName;
