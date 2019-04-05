@@ -163,28 +163,6 @@ will produce something like:
     }   
 }]
 ```
-
-## NPM-as-a-service on the Now platform
-
-The functionality in this module is also available via a REST API where methods 
-may be called by passing parameters to the service's url.  The parameter "method" is
-used to indicate which method to call, and additional parameters should match the
-signature of the method, for example:
-```bash
-curl "https://ofac.npm.now.sh/server.js?method=search&cust={id: 'J287011', country: 'Colombia'}"
-```
-returns a JSON object with the method's return value
-
-In Javascript you may use your fevourite package for fetching instead:
-```js
-const fetch = require('node-fetch')
-const url = 'https://ofac.npm.now.sh/server.js?method=search&cust={id: 'J287011', country: 'Colombia'}'
-fetch(url).then(res => res.json())
-    .then(o => {
-        console.log(o)  // will show the result
-    })
-```
-
 ## Licence
 MIT
 
