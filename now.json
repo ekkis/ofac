@@ -1,0 +1,7 @@
+{
+    "version": 2,
+    "scope": "npm",
+    "builds": [
+      { "src": "node_modules/npm-now/server.js", "use": "@now/node" }
+    ]
+}
