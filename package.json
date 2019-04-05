@@ -1,6 +1,6 @@
 {
   "name": "ofac",
-  "version": "1.0.17",
+  "version": "1.0.16",
   "description": "A module to facilitate local OFAC searches",
   "main": "index.js",
   "scripts": {
