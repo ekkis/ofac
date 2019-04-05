@@ -4,7 +4,10 @@
   "description": "A module to facilitate local OFAC searches",
   "main": "index.js",
   "scripts": {
-    "test": "mocha t/**/*.js"
+    "test": "mocha t/**/*.js",
+    "preversion": "npm run test",
+    "version": "",
+    "postversion": "git push && git push --tags && npm publish"
   },
   "repository": {
     "type": "git",
