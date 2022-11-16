@@ -25,11 +25,11 @@
   },
   "homepage": "https://github.com/ekkis/ofac#readme",
   "dependencies": {
-    "node-fetch": "^3.1.1",
+    "node-fetch": "^2.6.7",
     "node-stream-zip": "^1.8.0",
     "xml2js": "^0.4.19"
   },
   "devDependencies": {
-    "mocha": "^6.1.4"
+    "mocha": "^9.2.1"
   }
 }
