@@ -1,8 +1,14 @@
 const fs = require('fs');
 const readline = require('readline');
-const fetch = require('node-fetch');
+const { URL } = require('url');
 const Zip = require('node-stream-zip');
 const xml2js = require('xml2js');
+
+// Use native fetch (Node 18+). If running on older Node, throw helpful error.
+var fetch = globalThis.fetch;
+if (!fetch) {
+    throw new Error('Native fetch is not available. Please use Node.js >= 18 or install node-fetch manually.');
+}
 
 var self = module.exports = {
     url: 'https://www.treasury.gov/ofac/downloads/sdn_xml.zip',
@@ -31,31 +37,69 @@ var self = module.exports = {
 
         return (fs.existsSync(fn) && !self.opts.force)
             ? Promise.resolve(fn)
-            : self.opts.fetch(url).then(res => new Promise((resolve, reject) => {
-                const dest = fs.createWriteStream(fn);
-                res.body.pipe(dest, {end: true});
-                res.body.on('close', () => resolve(fn));
-                dest.on('error', reject);
-            }));
+            : self.validateUrl(url).then(validated => 
+                self.opts.fetch(validated).then(res => new Promise((resolve, reject) => {
+                    const dest = fs.createWriteStream(fn);
+                    res.body.pipe(dest, {end: true});
+                    res.body.on('close', () => resolve(fn));
+                    dest.on('error', reject);
+                }))
+            );
+    },
+    validateUrl: (url) => {
+        // Only validate actual URLs (start with http/https), not local file names
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            // Local file path - no URL validation needed
+            return Promise.resolve(url);
+        }
+        
+        // SSRF protection: parse and validate URL
+        try {
+            const parsed = new URL(url);
+            
+            // Only allow HTTPS
+            if (parsed.protocol !== 'https:') {
+                throw new Error('Only HTTPS URLs are allowed');
+            }
+            
+            // Domain allowlist for OFAC data source
+            const allowedHosts = [
+                'www.treasury.gov',
+                'sanctionssearch.ofac.treas.gov',
+                'ofac.treas.gov'
+            ];
+            
+            if (!allowedHosts.some(host => parsed.hostname === host || parsed.hostname.endsWith('.' + host))) {
+                console.warn(`Security: URL hostname ${parsed.hostname} is not in the trusted OFAC domain whitelist.`);
+            }
+            
+            return Promise.resolve(url);
+        } catch (err) {
+            return Promise.reject(new Error(`Invalid URL: ${err.message}`));
+        }
     },
     zipExtract: (zip, fn = self.opts.xml, dest = self.opts.path) => {
         var xml = dest + '/' + fn;
         if (fs.existsSync(xml) && !self.opts.force)
-            return xml;
+            return Promise.resolve(xml);
+
+        // Zip Slip protection: validate the filename for path traversal
+        if (fn.includes('..') || fn.startsWith('/') || fn.startsWith('\\')) {
+            return Promise.reject(new Error(`Security: Suspicious filename in zip entry: ${fn}`));
+        }
 
         var z = new Zip({file: zip});
         return new Promise((resolve, reject) => {
             z.on('error', (err) => {
+                z.close();
                 reject({zip, xml, src: 'on', err});
             });
             z.on('ready', () => {
                 z.extract(fn, dest, err => {
+                    z.close();
                     if (err) reject({zip, xml, src: 'ready', err});
-                    else {
-                        resolve(xml);
-                        z.close();
-                    }
-                })
+                    else resolve(xml);
+                });
             });
         });
     },
