@@ -1,10 +1,10 @@
 {
   "name": "ofac",
-  "version": "1.0.21",
+  "version": "1.0.23",
   "description": "A module to facilitate local OFAC searches",
   "main": "index.js",
   "scripts": {
-    "test": "mocha t/**/*.js",
+    "test": "mocha --require ./t/setup.cjs t/**/*.js",
     "preversion": "npm run test",
     "version": "",
     "postversion": "git push && git push --tags && npm publish"
@@ -31,5 +31,8 @@
   },
   "devDependencies": {
     "mocha": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=12"
   }
 }
