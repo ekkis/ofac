@@ -34,16 +34,85 @@ const self = module.exports = {
             Date.now() - fs.statSync(fn).mtimeMs < self.opts.refreshInterval);
         if (fresh && !self.opts.force) return fn;
         fs.mkdirSync(self.opts.path, { recursive: true });
-        const res = await self.opts.fetch(url);
+        const metadataPath = `${fn}.http.json`;
+        let metadata;
+        try {
+            const saved = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+            // Bind validators to both the source and the actual cached bytes.
+            // A missing, replaced or partially updated cache needs a full GET.
+            if (saved.url === url && saved.sha256 === digest(fs.readFileSync(fn))) metadata = saved;
+        } catch {}
+        const headers = {};
+        if (metadata && metadata.etag) headers['If-None-Match'] = metadata.etag;
+        else if (metadata && metadata.lastModified) headers['If-Modified-Since'] = metadata.lastModified;
+        await self.validateUrl(url);
+        let res = await self.opts.fetch(url, { headers });
+        if (res.status === 304) {
+            if (res.body && res.body.destroy) res.body.destroy();
+            // Recheck after the request in case the local file was removed or
+            // changed while the server was validating it.
+            let usable = false;
+            try { usable = !!metadata && metadata.sha256 === digest(fs.readFileSync(fn)); } catch {}
+            if (usable) {
+                const now = new Date();
+                fs.utimesSync(fn, now, now);
+                return fn;
+            }
+            res = await self.opts.fetch(url, { headers: {} });
+        }
+        if (res.status === 304) throw new Error('List validation returned 304 without a usable cache');
         if (res.ok === false) throw new Error(`List download failed: ${res.status}`);
         const tmp = `${fn}.${crypto.randomBytes(16).toString('hex')}.tmp`;
+        const metadataTmp = `${tmp}.http.json`;
         try {
             await pipeline(res.body, fs.createWriteStream(tmp, { flags: 'wx', mode: 0o600 }));
+            fs.writeFileSync(metadataTmp, JSON.stringify({ url,
+                etag: (res.headers && res.headers.get('etag')) || null,
+                lastModified: (res.headers && res.headers.get('last-modified')) || null,
+                sha256: digest(fs.readFileSync(tmp)) }), { flag: 'wx', mode: 0o600 });
             fs.renameSync(tmp, fn);
-        } finally { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); }
+            fs.renameSync(metadataTmp, metadataPath);
+        } finally {
+            for (const file of [tmp, metadataTmp]) if (fs.existsSync(file)) fs.unlinkSync(file);
+        }
         return fn;
     },
+    validateUrl: (url) => {
+        // Only validate actual URLs (start with http/https), not local file names
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            // Local file path - no URL validation needed
+            return Promise.resolve(url);
+        }
+
+        // SSRF protection: parse and validate URL
+        try {
+            const parsed = new URL(url);
+
+            // Only allow HTTPS
+            if (parsed.protocol !== 'https:') {
+                throw new Error('Only HTTPS URLs are allowed');
+            }
+
+            // Domain allowlist for OFAC data source
+            const allowedHosts = [
+                'www.treasury.gov',
+                'sanctionssearch.ofac.treas.gov',
+                'ofac.treas.gov'
+            ];
+
+            if (!allowedHosts.some(host => parsed.hostname === host || parsed.hostname.endsWith('.' + host))) {
+                console.warn(`Security: URL hostname ${parsed.hostname} is not in the trusted OFAC domain whitelist.`);
+            }
+
+            return Promise.resolve(url);
+        } catch (err) {
+            return Promise.reject(new Error(`Invalid URL: ${err.message}`));
+        }
+    },
     zipExtract(zip, fn = self.opts.xml, dest = self.opts.path) {
+        if (fn.includes('..') || fn.startsWith('/') || fn.startsWith('\\')) {
+            return Promise.reject(new Error(`Security: Suspicious filename in zip entry: ${fn}`));
+        }
         const xml = path.join(dest, fn);
         if (fs.existsSync(xml) && !self.opts.force) return Promise.resolve(xml);
         return new Promise((resolve, reject) => {
@@ -75,6 +144,14 @@ const self = module.exports = {
         })();
         try { return await loading; } finally { loading = null; }
     },
+    async ensureCurrentSnapshot() {
+        validateOptions();
+        if (loading) await loading;
+        const lists = selectLists(self.opts.lists);
+        const stale = lists.some(list => !loaded[list] || (self.opts.refreshInterval !== false && Date.now() - loaded[list].loadedAt >= self.opts.refreshInterval));
+        if (stale || self.opts.force) await self.init({}, lists);
+        return self.listInfo();
+    },
     async refresh() {
         const force = self.opts.force;
         try { return await self.init({ force: true }); }
@@ -96,6 +173,7 @@ const self = module.exports = {
         let hits = [], failure;
         try {
             if (!cust || typeof cust !== 'object' || Array.isArray(cust)) throw new Error('Query must be an object');
+            if (cust.caseContext) audit.context = clone(cust.caseContext);
             given = searchInputs(cust);
             query = normalise(given);
             audit.query = { given: clone(given), normalised: clone(query) };
@@ -130,7 +208,7 @@ const self = module.exports = {
                 Object.defineProperty(hit, 'toJSON', { value: () => ({ ...hit, ...metadata }) });
                 hits.push(hit);
                 audit.results.push({ uid: hit.uid, list: metadata.list, matchScore: match.score,
-                    matchedFields: match.fields, disposition: clone(audit.disposition) });
+                    matchedFields: match.fields, entry: clone(entry), disposition: clone(audit.disposition) });
             }
         } catch (err) { failure = err; audit.error = { code: 'SCREEN_FAILED' }; }
         appendAudit(audit); // failure is fatal, including for empty results or search errors
@@ -159,21 +237,25 @@ const self = module.exports = {
         }
         return reports;
     },
+    saveCheckpoint(checkpoint) { appendAudit({ ...checkpoint, kind: 'checkpoint', timestamp: new Date().toISOString() }); },
+    saveOwnership(disclosure) { appendAudit({ ...disclosure, kind: 'ownership-disclosure', timestamp: new Date().toISOString() }); },
     readAudit() {
         return fs.readFileSync(auditPath(), 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line));
     },
-    setDisposition(auditId, { state, reviewer, rationale }) {
+    setDisposition(auditId, { state, reviewer, rationale, blocked }) {
         if (!self.states.includes(state) || state === 'pending') throw new Error('Invalid disposition transition');
         if (!reviewer || !rationale) throw new Error('reviewer and rationale are required');
         const records = self.readAudit();
         const screen = records.find(r => r.kind === 'search' && r.id === auditId);
         if (!screen) throw new Error('Unknown auditId');
+        if (screen.context?.role === 'owner' && state === 'refused' && blocked !== true) throw new Error('Owner refusal requires explicit confirmation of blocking sanctions');
+        if (blocked !== undefined && (screen.context?.role !== 'owner' || state !== 'refused' || blocked !== true)) throw new Error('Invalid owner blocking finding');
         const last = records.filter(r => r.kind === 'disposition' && r.auditId === auditId).pop();
         if (last && last.disposition.state !== 'escalated') throw new Error('Disposition is final');
         if (state === 'refused' && screen.purpose !== 'onboarding') throw new Error('refused requires onboarding');
         if (state === 'blocked' && screen.purpose !== 'transaction') throw new Error('blocked requires transaction');
         const record = { id: crypto.randomBytes(16).toString('hex'), kind: 'disposition', timestamp: new Date().toISOString(),
-            auditId, disposition: { state, reviewer, rationale } };
+            auditId, disposition: { state, reviewer, rationale, ...(blocked === true ? { blocked: true } : {}) } };
         appendAudit(record);
         return record;
     },
@@ -209,6 +291,7 @@ function appendAudit(record) {
     const fn = auditPath();
     const fd = fs.openSync(fn, 'a', 0o600);
     try {
+        fs.fchmodSync(fd, 0o600);
         const bytes = Buffer.from(JSON.stringify(record) + '\n');
         if (fs.writeSync(fd, bytes) !== bytes.length) throw new Error('Incomplete audit write');
         fs.fsyncSync(fd);

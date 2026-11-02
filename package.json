@@ -1,10 +1,10 @@
 {
   "name": "ofac",
-  "version": "1.0.23",
+  "version": "1.0.26",
   "description": "A module to facilitate local OFAC searches",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --require ./t/setup.cjs t/**/*.js",
+    "test": "mocha --require ./t/setup.cjs t/**/*.js && node --test t/http-cache.test.mjs",
     "preversion": "npm run test",
     "version": "",
     "postversion": "git push && git push --tags && npm publish"
@@ -25,14 +25,19 @@
   },
   "homepage": "https://github.com/ekkis/ofac#readme",
   "dependencies": {
-    "node-fetch": "^2.6.7",
-    "node-stream-zip": "^1.8.0",
-    "xml2js": "^0.4.19"
+    "node-fetch": "^2.7.0",
+    "node-stream-zip": "^1.15.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "mocha": "^9.2.1"
+    "mocha": "11.3.0"
   },
   "engines": {
-    "node": ">=12"
+    "node": ">=18.0.0"
+  },
+  "overrides": {
+    "serialize-javascript": "7.0.5",
+    "diff": "5.2.2",
+    "brace-expansion": "2.0.3"
   }
 }

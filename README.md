@@ -35,7 +35,7 @@ Create and protect the audit directory beforehand. `auditPath` must be absolute;
 
 ### `config(options)`, `init(options)`, `refresh()`, `listInfo()`
 
-`config` merges options. `init` loads every selected list and resolves to an XML filename, preserving the old return type. New snapshots become active only after all selected lists parse successfully. `refresh()` forces a download/reload and restores the previous `force` setting afterward. Download, HTTP, parse, and required-list errors propagate; they never silently fall back to SDN-only or stale data.
+`config` merges options. `init` loads every selected list and resolves to an XML filename, preserving the old return type. New snapshots become active only after all selected lists parse successfully. `refresh()` forces HTTP revalidation/reload and restores the previous `force` setting afterward. Download, HTTP, parse, and required-list errors propagate; they never silently fall back to SDN-only or stale data.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -43,13 +43,15 @@ Create and protect the audit directory beforehand. `auditPath` must be absolute;
 | `path` | `/tmp` | Download cache directory; choose durable storage for deployed use. |
 | `auditPath` | none; required for search | Absolute append-only JSONL filename outside the repository; directory must exist. |
 | `refreshInterval` | `86400000` | Cache age in milliseconds. Check on each search; `0` refreshes every time. `false` explicitly opts into download-once. |
-| `force` | `false` | Force fetching when initialising/searching. Prefer `refresh()` for one forced update. |
+| `force` | `false` | Force HTTP revalidation when initialising/searching. Prefer `refresh()` for one forced update. |
 | `threshold` | `1` | Inclusive name similarity cutoff, from 0 to 1. Exact normalised names always score 1. |
 | `fetch` | existing `node-fetch` dependency | Injectable HTTP implementation; response body is a Node stream. |
 | `sources` | official URLs | Per-list `{url}` overrides or `{file}` for caller-managed legacy XML snapshots. |
 | `xml` | `sdn.xml` | Legacy ZIP helper's extraction member. |
 
 `sdn` downloads `https://sanctionslistservice.ofac.treas.gov/api/download/sdn.xml`; `non-sdn` downloads `https://sanctionslistservice.ofac.treas.gov/api/download/consolidated.xml`. OFAC's own “Consolidated” download is **non-SDN only**, so this module's `consolidated` selection deliberately combines both downloads. The non-SDN file includes SSI, FSE and other lists OFAC includes in that publication; `programList` preserves programme tags. Selection is per published file, not per individual programme. See [OFAC's list service](https://ofac.treasury.gov/sanctions-list-service) and [non-SDN consolidated list](https://ofac.treasury.gov/consolidated-sanctions-list-non-sdn-lists).
+
+HTTP downloads persist ETag and Last-Modified validators in a private `<filename>.http.json` sidecar bound to the source URL and SHA-256 of the cached file. Refreshes send `If-None-Match`, falling back to `If-Modified-Since` when there is no ETag. A `304 Not Modified` reuses the cache and updates its freshness time without downloading the list body; a `200` atomically replaces the file and its validators. Missing, corrupt or mismatched caches are downloaded unconditionally. Servers without validators continue to use full downloads. Errors propagate rather than treating an unreachable source as unchanged. HTTP validators save bandwidth; SHA-256 remains the audit version and re-screening change detector.
 
 Freshness is elapsed time since the cache file's modification time, not a guarantee that OFAC has issued no newer publication. There is no background timer or scheduler. After the interval expires the next search refreshes before matching. `refreshInterval: false` is the explicit legacy download-once option. For `{file}` sources, refresh re-reads the file; the caller must replace it with a current snapshot. Unsupported/advanced XML schemas reject rather than produce empty matches.
 
